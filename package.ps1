@@ -18,7 +18,7 @@ $ZipRootDir = "$ZipWorkDir/BepInEx"
 $ZipInnerDir = "$ZipRootDir/plugins/dvDirectInput/"
 $BuildDir = "build"
 $LicenseFile = "LICENSE"
-$AssemblyFile = "$BuildDir/dvDirectInput.dll"
+$AssemblyFile = "$BuildDir/*.*"
 
 New-Item "$ZipInnerDir" -ItemType Directory -Force
 Copy-Item -Force -Path "$LicenseFile", "$AssemblyFile" -Destination "$ZipInnerDir"
