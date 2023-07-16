@@ -249,10 +249,9 @@ namespace dvDirectInput
 					PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider.DynamicBrake?.Set(input.NormalisedValue);
 
 				// Reverser
-				// Neutral is specified when exactly 0.5. As this is unacheivable with analogue axis we will just convert the analogue input to 3 values.
-				// 0, 0.5 and 1 which correspond to reverse, neutral and forward
+				// Diesel locos specify neutral as exactly 50%. Set up a deadzone on your input device (I might make one here eventually)
 				if (configThrottleInputEnabled.Value && input.JoystickId == configReverserInputJoystickId.Value && input.Offset == configReverserInputJoystickOffset.Value)
-					PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider.Reverser?.Set((float)(Math.Round(input.NormalisedValue * 2) / 2));
+					PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider.Reverser?.Set(input.NormalisedValue);
 
 				// sander
 				// horn
