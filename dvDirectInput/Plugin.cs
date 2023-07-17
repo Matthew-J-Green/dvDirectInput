@@ -17,7 +17,7 @@ namespace dvDirectInput
 	[BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
 	public class Plugin : BaseUnityPlugin
 	{
-		public class configControls
+		public class ConfigControls
 		{
 			public ConfigEntry<bool> Enabled;
 			public ConfigEntry<int> DeviceId;
@@ -28,11 +28,11 @@ namespace dvDirectInput
 		private ConfigEntry<bool> configEnableRecentInputGUI;
 
 		// Config - Controls
-		public configControls configControlsThrottle = new configControls();
-		public configControls configControlsTrainBrake = new configControls();
-		public configControls configControlsIndependentBrake = new configControls();
-		public configControls configControlsDynamicBrake = new configControls();
-		public configControls configControlsReverser = new configControls();
+		public ConfigControls configControlsThrottle = new ConfigControls();
+		public ConfigControls configControlsTrainBrake = new ConfigControls();
+		public ConfigControls configControlsIndependentBrake = new ConfigControls();
+		public ConfigControls configControlsDynamicBrake = new ConfigControls();
+		public ConfigControls configControlsReverser = new ConfigControls();
 
 		public struct Input
 		{
@@ -53,6 +53,8 @@ namespace dvDirectInput
 
 		private List<Queue<JoystickUpdate>> joysticksRecentInputs = new List<Queue<JoystickUpdate>>();
 
+		List<KeyValuePair<ControlType, ConfigControls>> mapControl2Input = new List<KeyValuePair<ControlType, ConfigControls>>(); 
+
 
 		// Loading Mod
 		private void Awake()
@@ -62,6 +64,7 @@ namespace dvDirectInput
 
 			// Config
 			BindAllConfigs();
+			MapControls2Inputs();
 
 			// Initialise all Direct Input game controllers as joysticks
 			// We may want to run this in the main logic in case of devices attached on the fly
@@ -130,60 +133,22 @@ namespace dvDirectInput
 
 				// Dont bother doing anything if we arent in a loco
 				if (!PlayerManager.Car?.IsLoco ?? true)
-					continue;
-
-				// Map inputs
-				// Todo MORE INPUTS
-				// DirectInput exposes buttons so these should be added for other loco functions that havent been implemented here
-				// These could include flipping breakers, starter, horn, sander etc.
-				// Additionally those controllers with multi state dials/switcher/levers could use them for the reverser (3 state), lights (5 state?) etc
-				SetLocoControl(ControlType.Throttle, configControlsThrottle, input);
-				SetLocoControl(ControlType.TrainBrake, configControlsTrainBrake, input);
-				SetLocoControl(ControlType.IndBrake, configControlsIndependentBrake, input);
-				SetLocoControl(ControlType.DynamicBrake, configControlsDynamicBrake, input);
-				SetLocoControl(ControlType.Reverser, configControlsReverser, input);
-
-				//		  Throttle,
-				//        TrainBrake,
-				//        Reverser,
-				//        IndBrake,
-				//        Handbrake,
-				//        Sander,
-				//        Horn,
-				//        HeadlightsFront,
-				//        HeadlightsRear,
-				//        StarterFuse,
-				//        ElectricsFuse,
-				//        TractionMotorFuse,
-				//        StarterControl,
-				//        DynamicBrake,
-				//        CabLight,
-				//        Wipers,
-				//        FuelCutoff,
-				//        ReleaseCyl,
-				//        IndHeadlightsTypeFront,
-				//        IndHeadlights1Front,
-				//        IndHeadlights2Front,
-				//        IndHeadlightsTypeRear,
-				//        IndHeadlights1Rear,
-				//        IndHeadlights2Rear,
-				//        IndWipers1,
-				//        IndWipers2,
-				//        IndCabLight,
-				//        IndDashLight,
-				//        GearboxA,
-				//        GearboxB,
-				//        CylCock,
-				//        Injector,
-				//        Firedoor,
-				//        Blower,
-				//        Damper,
-				//        Blowdown,
-				//        CoalDump,
-				//        Dynamo,
-				//        AirPump,
-				//        Lubricator,
-				//        Bell
+				{
+					// Probbaly not going to get in a loco this game update so just clear the queue
+					inputQueue.Clear();
+					break;
+				}
+					
+				// Assign Inputs
+				foreach(var mapping in mapControl2Input)
+				{
+					// We should probably do a lookup for the inputs against the mappings instead of iterating
+					if (mapping.Value.Enabled.Value && input.JoystickId == mapping.Value.DeviceId.Value && input.Offset == mapping.Value.DeviceOffset.Value)
+					{
+						PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider?.GetControl(mapping.Key)?.Set(input.NormalisedValue);
+						break;
+					}						
+				}				
 			}
 		}
 
@@ -239,7 +204,7 @@ namespace dvDirectInput
 			joysticksRecentInputs.Clear();
 		}
 
-		private void BindControlsConfigs(String section, configControls config)
+		private void BindControlsConfigs(String section, ConfigControls config)
 		{
 			config.Enabled = Config.Bind($"Controls - {section}",
 				"Enable",
@@ -273,10 +238,56 @@ namespace dvDirectInput
 			BindControlsConfigs("Reverser", configControlsReverser);
 		}
 
-		private void SetLocoControl(ControlType control, configControls config, Input input)
+		private void MapControls2Inputs()
 		{
-			if (config.Enabled.Value && input.JoystickId == config.DeviceId.Value && input.Offset == config.DeviceOffset.Value)
-				PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider?.GetControl(control)?.Set(input.NormalisedValue);
+			// Map inputs
+			// Todo MORE INPUTS
+			// DirectInput exposes buttons so these should be added for other loco functions that havent been implemented here
+			// These could include flipping breakers, starter, horn, sander etc.
+			// Additionally those controllers with multi state dials/switcher/levers could use them for the reverser (3 state), lights (5 state?) etc
+			mapControl2Input.Add(new KeyValuePair<ControlType, ConfigControls>(ControlType.Throttle, configControlsThrottle));
+			mapControl2Input.Add(new KeyValuePair<ControlType, ConfigControls>(ControlType.TrainBrake, configControlsTrainBrake));
+			mapControl2Input.Add(new KeyValuePair<ControlType, ConfigControls>(ControlType.IndBrake, configControlsIndependentBrake));
+			mapControl2Input.Add(new KeyValuePair<ControlType, ConfigControls>(ControlType.DynamicBrake, configControlsDynamicBrake));
+			mapControl2Input.Add(new KeyValuePair<ControlType, ConfigControls>(ControlType.Reverser, configControlsReverser));
+			//mapControl2Input.Add(new KeyValuePair<ControlType, ConfigControls>(ControlType.Handbrake, ));
+
+			//        Handbrake,
+			//        Sander,
+			//        Horn,
+			//        HeadlightsFront,
+			//        HeadlightsRear,
+			//        StarterFuse,
+			//        ElectricsFuse,
+			//        TractionMotorFuse,
+			//        StarterControl,
+			//        CabLight,
+			//        Wipers,
+			//        FuelCutoff,
+			//        ReleaseCyl,
+			//        IndHeadlightsTypeFront,
+			//        IndHeadlights1Front,
+			//        IndHeadlights2Front,
+			//        IndHeadlightsTypeRear,
+			//        IndHeadlights1Rear,
+			//        IndHeadlights2Rear,
+			//        IndWipers1,
+			//        IndWipers2,
+			//        IndCabLight,
+			//        IndDashLight,
+			//        GearboxA,
+			//        GearboxB,
+			//        CylCock,
+			//        Injector,
+			//        Firedoor,
+			//        Blower,
+			//        Damper,
+			//        Blowdown,
+			//        CoalDump,
+			//        Dynamo,
+			//        AirPump,
+			//        Lubricator,
+			//        Bell
 		}
 	}
 
