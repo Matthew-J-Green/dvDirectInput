@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using UnityEngine;
+using static System.Collections.Specialized.BitVector32;
 
 namespace dvDirectInput
 {
@@ -66,86 +67,8 @@ namespace dvDirectInput
 				true,
 				"Enable/Disable displaying recent inputs. Use this to identify the inputs for configuring the controls");
 
-			// Copy/paste cause im lazy
-			// Config - Controls - Throttle
-			configThrottleInputEnabled = Config.Bind("Throttle Input",
-				"Enable",
-				false,
-				"Enables this input");
-
-			configThrottleInputJoystickId = Config.Bind("Throttle Input",
-				"Input Device ID",
-				0,
-				"ID of input device provided by GUI");
-
-			configThrottleInputJoystickOffset = Config.Bind("Throttle Input",
-				"Input Device Offset",
-				JoystickOffset.X,
-				"Input device offset(axis/button provided by GUI");
-
-			// Config - Controls - Train Brake
-			configTrainBrakeInputEnabled = Config.Bind("Train Brake Input",
-				"Enable",
-				false,
-				"Enables this input");
-
-			configTrainBrakeInputJoystickId = Config.Bind("Train Brake Input",
-				"Input Device ID",
-				0,
-				"ID of input device provided by GUI");
-
-			configTrainBrakeInputJoystickOffset = Config.Bind("Train Brake Input",
-				"Input Device Offset",
-				JoystickOffset.X,
-				"Input device offset(axis/button provided by GUI");
-
-			// Config - Controls - Independent Brake
-			configIndependentBrakeInputEnabled = Config.Bind("Independent Brake Input",
-				"Enable",
-				false,
-				"Enables this input");
-
-			configIndependentBrakeInputJoystickId = Config.Bind("Independent Brake Input",
-				"Input Device ID",
-				0,
-				"ID of input device provided by GUI");
-
-			configIndependentBrakeInputJoystickOffset = Config.Bind("Independent Brake Input",
-				"Input Device Offset",
-				JoystickOffset.X,
-				"Input device offset(axis/button provided by GUI");
-
-			// Config - Controls - Dynamic Brake
-			configDynamicBrakeInputEnabled = Config.Bind("Dynamic Brake Input",
-				"Enable",
-				false,
-				"Enables this input");
-
-			configDynamicBrakeInputJoystickId = Config.Bind("Dynamic Brake Input",
-				"Input Device ID",
-				0,
-				"ID of input device provided by GUI");
-
-			configDynamicBrakeInputJoystickOffset = Config.Bind("Dynamic Brake Input",
-				"Input Device Offsett",
-				JoystickOffset.X,
-				"Input device offset(axis/button provided by GUI");
-
-			// Config - Controls - Reverser
-			configReverserInputEnabled = Config.Bind("Reverser Input",
-				"Enable",
-				false,
-				"Enables this input");
-
-			configReverserInputJoystickId = Config.Bind("Reverser Input",
-				"Input Device ID",
-				0,
-				"ID of input device provided by GUI");
-
-			configReverserInputJoystickOffset = Config.Bind("Reverser Input",
-				"Input Device Offset",
-				JoystickOffset.X,
-				"Input device offset(axis/button provided by GUI");
+			// Config - Controls
+			BindAllControlsConfigs();
 
 			// Plugin startup logic
 			Logger.LogInfo($"Plugin [{PluginInfo.PLUGIN_GUID}|{PluginInfo.PLUGIN_NAME}|{PluginInfo.PLUGIN_VERSION}] is loaded!");
@@ -341,6 +264,33 @@ namespace dvDirectInput
 			joysticks.Clear();
 			inputQueue.Clear();
 			joysticksRecentInputs.Clear();
+		}
+
+		private void BindControlsConfigs(String section, ConfigEntry<bool> enabled, ConfigEntry<int> id, ConfigEntry<JoystickOffset> offset)
+		{
+			enabled = Config.Bind($"{section} Input",
+				"Enable",
+				false,
+				"Enables this input");
+
+			id = Config.Bind($"{section} Input",
+				"Input Device ID",
+				0,
+				"ID of input device provided by GUI");
+
+			offset = Config.Bind($"{section} Input",
+				"Input Device Offset",
+				JoystickOffset.X,
+				"Input device offset axis/button provided by GUI");
+		}
+
+		private void BindAllControlsConfigs()
+		{
+			BindControlsConfigs("Throttle", configThrottleInputEnabled, configThrottleInputJoystickId, configThrottleInputJoystickOffset);
+			BindControlsConfigs("Train Brake", configTrainBrakeInputEnabled, configTrainBrakeInputJoystickId, configTrainBrakeInputJoystickOffset);
+			BindControlsConfigs("Independent Brake", configIndependentBrakeInputEnabled, configIndependentBrakeInputJoystickId, configIndependentBrakeInputJoystickOffset);
+			BindControlsConfigs("Dynamic Brake", configDynamicBrakeInputEnabled, configDynamicBrakeInputJoystickId, configDynamicBrakeInputJoystickOffset);
+			BindControlsConfigs("Reverser", configReverserInputEnabled, configReverserInputJoystickId, configReverserInputJoystickOffset);
 		}
 	}
 
