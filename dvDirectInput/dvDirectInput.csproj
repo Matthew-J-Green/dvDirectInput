@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<AssemblyName>dvDirectInput</AssemblyName>
 		<Description></Description>
-		<Version>0.2.0</Version>
+		<Version>0.3.0</Version>
 		<TargetFramework>netframework4.8</TargetFramework>
 		<LangVersion>latest</LangVersion>
 		<Nullable>enable</Nullable>

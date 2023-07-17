@@ -17,23 +17,23 @@ namespace dvDirectInput
 	[BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
 	public class Plugin : BaseUnityPlugin
 	{
+		// Items corresponding to the controls config
 		public class ConfigControls
 		{
-			public ConfigEntry<bool> Enabled;
-			public ConfigEntry<int> DeviceId;
-			public ConfigEntry<JoystickOffset> DeviceOffset;
+			public ConfigEntry<bool> Enabled { get; set; }
+			public ConfigEntry<int> DeviceId { get; set; }
+			public ConfigEntry<JoystickOffset> DeviceOffset { get; set; }
+
 		}
 
 		// Config - Debug
 		private ConfigEntry<bool> configEnableRecentInputGUI;
 
 		// Config - Controls
-		public ConfigControls configControlsThrottle = new ConfigControls();
-		public ConfigControls configControlsTrainBrake = new ConfigControls();
-		public ConfigControls configControlsIndependentBrake = new ConfigControls();
-		public ConfigControls configControlsDynamicBrake = new ConfigControls();
-		public ConfigControls configControlsReverser = new ConfigControls();
+		// Just a big list storing every input we want to control
+		public List<ConfigControls> configControls = new List<ConfigControls>();
 
+		// Items used to identify a control device. we could actually pass along the joystick object here instead of the ID
 		public struct Input
 		{
 			public int JoystickId { get; set; }
@@ -42,19 +42,11 @@ namespace dvDirectInput
 			public int Timestamp { get; set; }
 			public JoystickOffset Offset;
 
-			public override string ToString()
-			{
-				return string.Format(CultureInfo.InvariantCulture, "ID: {0}, Offset: {1}, Value: {2}, Timestamp {3}", JoystickId, Offset, Value, Timestamp);
-			}
 		}
 
 		private List<Joystick> joysticks = new List<Joystick>();
 		private Queue<Input> inputQueue = new Queue<Input>();
-
 		private List<Queue<JoystickUpdate>> joysticksRecentInputs = new List<Queue<JoystickUpdate>>();
-
-		List<KeyValuePair<ControlType, ConfigControls>> mapControl2Input = new List<KeyValuePair<ControlType, ConfigControls>>(); 
-
 
 		// Loading Mod
 		private void Awake()
@@ -62,10 +54,14 @@ namespace dvDirectInput
 			// Plugin startup logic
 			Logger.LogInfo($"Plugin [{PluginInfo.PLUGIN_GUID}|{PluginInfo.PLUGIN_NAME}|{PluginInfo.PLUGIN_VERSION}] is loaded!");
 
-			// Config
-			BindAllConfigs();
-			MapControls2Inputs();
-
+			// Initialise configControls
+			// ControlType contains all the controllable elements. We can just create a list with all the elements.
+			// We should probably do a key value pair instead of this madness, but it works. The ControlType is the index of this list.
+			for (int i = 0; i < Enum.GetNames(typeof(ControlType)).Length; i++)
+			{
+				configControls.Add(new ConfigControls());
+			}
+			
 			// Initialise all Direct Input game controllers as joysticks
 			// We may want to run this in the main logic in case of devices attached on the fly
 			// Could be more complicated than it sounds
@@ -85,6 +81,8 @@ namespace dvDirectInput
 
 				joysticksRecentInputs.Add(new Queue<JoystickUpdate>());
 			}
+
+			BindAllConfigs();
 		}
 
 		// Every Frame
@@ -98,7 +96,6 @@ namespace dvDirectInput
 				joystick.val.Poll();
 				foreach (var data in joystick.val.GetBufferedData())
 				{
-					//Logger.LogInfo($"Device {joystick.val.Properties.JoystickId}: {data}");
 					// Chuck all the inputs on a queue
 					var input = new Input() { JoystickId = joystick.val.Properties.JoystickId, Offset = data.Offset, Value = data.Value, Timestamp = data.Timestamp };
 					inputQueue.Enqueue(input);
@@ -128,9 +125,6 @@ namespace dvDirectInput
 			// Main Logic
 			while (inputQueue.Count > 0)
 			{
-				// Eat up all the queue items
-				var input = inputQueue.Dequeue();
-
 				// Dont bother doing anything if we arent in a loco
 				if (!PlayerManager.Car?.IsLoco ?? true)
 				{
@@ -138,18 +132,56 @@ namespace dvDirectInput
 					inputQueue.Clear();
 					break;
 				}
-					
+
+				// Eat up all the queue items
+				var input = inputQueue.Dequeue();
+
 				// Assign Inputs
-				foreach(var mapping in mapControl2Input)
+				foreach (var configControl in configControls.Select((val, idx) => new { idx, val }))
 				{
 					// We should probably do a lookup for the inputs against the mappings instead of iterating
-					if (mapping.Value.Enabled.Value && input.JoystickId == mapping.Value.DeviceId.Value && input.Offset == mapping.Value.DeviceOffset.Value)
+					if (configControl.val.Enabled.Value && input.JoystickId == configControl.val.DeviceId.Value && input.Offset == configControl.val.DeviceOffset.Value)
 					{
-						PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider?.GetControl(mapping.Key)?.Set(input.NormalisedValue);
+						PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider?.GetControl((ControlType)configControl.idx)?.Set(input.NormalisedValue);
 						break;
 					}						
 				}				
 			}
+		}
+
+		private void BindAllConfigs()
+		{
+			// GUI
+			configEnableRecentInputGUI = Config.Bind("Debug - GUI",
+				"Enable",
+				true,
+				"Enable/Disable displaying recent inputs. Use this to identify the inputs for configuring the controls");
+
+			// Controls
+			foreach (var configControl in configControls.Select((val, idx) => new { idx, val }))
+			{
+				BindControlsConfigs($"{((ControlType)configControl.idx).ToString()}", configControl.val);
+			}
+		}
+
+		private void BindControlsConfigs(String section, ConfigControls config)
+		{
+			// We should probably bind and unbind the ID and offset based on the enable signal to de-clutter the GUI
+			config.Enabled = Config.Bind($"Controls - {section}",
+				"Enable",
+				false,
+				"Enables this input");
+
+			config.DeviceId = Config.Bind($"Controls - {section}",
+				"Input Device ID",
+				0,
+				"ID of input device provided by GUI");
+
+			config.DeviceOffset = Config.Bind($"Controls - {section}",
+				"Input Device Offset",
+				JoystickOffset.X,
+				"Input device offset axis/button provided by GUI");
+
 		}
 
 		// Every GUI event (possibly multiple times per frame)
@@ -204,91 +236,6 @@ namespace dvDirectInput
 			joysticksRecentInputs.Clear();
 		}
 
-		private void BindControlsConfigs(String section, ConfigControls config)
-		{
-			config.Enabled = Config.Bind($"Controls - {section}",
-				"Enable",
-				false,
-				"Enables this input");
-
-			config.DeviceId = Config.Bind($"Controls - {section}",
-				"Input Device ID",
-				0,
-				"ID of input device provided by GUI");
-
-			config.DeviceOffset = Config.Bind($"Controls - {section}",
-				"Input Device Offset",
-				JoystickOffset.X,
-				"Input device offset axis/button provided by GUI");
-		}
-
-		private void BindAllConfigs()
-		{
-			// GUI
-			configEnableRecentInputGUI = Config.Bind("Debug - GUI",
-				"Enable",
-				true,
-				"Enable/Disable displaying recent inputs. Use this to identify the inputs for configuring the controls");
-
-			//Controls
-			BindControlsConfigs("Throttle", configControlsThrottle);
-			BindControlsConfigs("Train Brake", configControlsTrainBrake);
-			BindControlsConfigs("Independent Brake", configControlsIndependentBrake);
-			BindControlsConfigs("Dynamic Brake", configControlsDynamicBrake);
-			BindControlsConfigs("Reverser", configControlsReverser);
-		}
-
-		private void MapControls2Inputs()
-		{
-			// Map inputs
-			// Todo MORE INPUTS
-			// DirectInput exposes buttons so these should be added for other loco functions that havent been implemented here
-			// These could include flipping breakers, starter, horn, sander etc.
-			// Additionally those controllers with multi state dials/switcher/levers could use them for the reverser (3 state), lights (5 state?) etc
-			mapControl2Input.Add(new KeyValuePair<ControlType, ConfigControls>(ControlType.Throttle, configControlsThrottle));
-			mapControl2Input.Add(new KeyValuePair<ControlType, ConfigControls>(ControlType.TrainBrake, configControlsTrainBrake));
-			mapControl2Input.Add(new KeyValuePair<ControlType, ConfigControls>(ControlType.IndBrake, configControlsIndependentBrake));
-			mapControl2Input.Add(new KeyValuePair<ControlType, ConfigControls>(ControlType.DynamicBrake, configControlsDynamicBrake));
-			mapControl2Input.Add(new KeyValuePair<ControlType, ConfigControls>(ControlType.Reverser, configControlsReverser));
-			//mapControl2Input.Add(new KeyValuePair<ControlType, ConfigControls>(ControlType.Handbrake, ));
-
-			//        Handbrake,
-			//        Sander,
-			//        Horn,
-			//        HeadlightsFront,
-			//        HeadlightsRear,
-			//        StarterFuse,
-			//        ElectricsFuse,
-			//        TractionMotorFuse,
-			//        StarterControl,
-			//        CabLight,
-			//        Wipers,
-			//        FuelCutoff,
-			//        ReleaseCyl,
-			//        IndHeadlightsTypeFront,
-			//        IndHeadlights1Front,
-			//        IndHeadlights2Front,
-			//        IndHeadlightsTypeRear,
-			//        IndHeadlights1Rear,
-			//        IndHeadlights2Rear,
-			//        IndWipers1,
-			//        IndWipers2,
-			//        IndCabLight,
-			//        IndDashLight,
-			//        GearboxA,
-			//        GearboxB,
-			//        CylCock,
-			//        Injector,
-			//        Firedoor,
-			//        Blower,
-			//        Damper,
-			//        Blowdown,
-			//        CoalDump,
-			//        Dynamo,
-			//        AirPump,
-			//        Lubricator,
-			//        Bell
-		}
 	}
 
 }
