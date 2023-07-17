@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<AssemblyName>dvDirectInput</AssemblyName>
 		<Description></Description>
-		<Version>0.1.0</Version>
+		<Version>0.2.0</Version>
 		<TargetFramework>netframework4.8</TargetFramework>
 		<LangVersion>latest</LangVersion>
 		<Nullable>enable</Nullable>
@@ -46,6 +46,9 @@
 			<_CopyItems Include="$(TargetDir)\SharpDX*.dll" />
 		</ItemGroup>
 		<Copy SourceFiles="@(_CopyItems)" DestinationFolder="../build/" />
+
+		<!-- Copy to game plugins -->
+		<Copy SourceFiles="$(TargetPath)" DestinationFolder="D:\SteamLibrary\steamapps\common\Derail Valley\BepInEx\plugins\dvDirectInput" />
 
 		<!-- Package after Release build -->
 		<Exec Condition="'$(ConfigurationName)' == 'Release' And '$(OS)' == 'Windows_NT'" Command="powershell -executionpolicy bypass -Command &quot;(../package.ps1)&quot;" />

@@ -1,17 +1,13 @@
 using BepInEx;
 using BepInEx.Configuration;
-using DV.CabControls;
-using DV.CabControls.Spec;
 using DV.HUD;
 using DV.Simulation.Cars;
-using DV.Simulation.Controllers;
 using SharpDX.DirectInput;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace dvDirectInput
 {
@@ -224,9 +220,7 @@ namespace dvDirectInput
 					continue;
 
 				// Map inputs
-				// This uses DV.Simulation.Cars.SimController.controlsOverrider as another mod already used this
-				// We may actually be able to set locomotive controls a different way as this doesnt include all the inputs
-				// Notably missing is the DM Gearbox but also interior lights etc
+				// Todo MORE INPUTS
 				// DirectInput exposes buttons so these should be added for other loco functions that havent been implemented here
 				// These could include flipping breakers, starter, horn, sander etc.
 				// Additionally those controllers with multi state dials/switcher/levers could use them for the reverser (3 state), lights (5 state?) etc
@@ -234,31 +228,66 @@ namespace dvDirectInput
 				// Copy and paste cause im lazy
 				// Throttle
 				if (configThrottleInputEnabled.Value && input.JoystickId == configThrottleInputJoystickId.Value && input.Offset == configThrottleInputJoystickOffset.Value)
-					PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider.Throttle?.Set(input.NormalisedValue);
+					PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider?.GetControl(InteriorControlsManager.ControlType.Throttle)?.Set(input.NormalisedValue);
 
 				// Train Brake
-				if (configThrottleInputEnabled.Value && input.JoystickId == configTrainBrakeInputJoystickId.Value && input.Offset == configTrainBrakeInputJoystickOffset.Value)
-					PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider.Brake?.Set(input.NormalisedValue);
+				if (configTrainBrakeInputEnabled.Value && input.JoystickId == configTrainBrakeInputJoystickId.Value && input.Offset == configTrainBrakeInputJoystickOffset.Value)
+					PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider?.GetControl(InteriorControlsManager.ControlType.TrainBrake).Set(input.NormalisedValue);
 
 				// Independent Brake
-				if (configThrottleInputEnabled.Value && input.JoystickId == configIndependentBrakeInputJoystickId.Value && input.Offset == configIndependentBrakeInputJoystickOffset.Value)
-					PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider.IndependentBrake?.Set(input.NormalisedValue);
+				if (configIndependentBrakeInputEnabled.Value && input.JoystickId == configIndependentBrakeInputJoystickId.Value && input.Offset == configIndependentBrakeInputJoystickOffset.Value)
+					PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider?.GetControl(InteriorControlsManager.ControlType.IndBrake)?.Set(input.NormalisedValue);
 
 				// Dynamic Brake
-				if (configThrottleInputEnabled.Value && input.JoystickId == configDynamicBrakeInputJoystickId.Value && input.Offset == configDynamicBrakeInputJoystickOffset.Value)
-					PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider.DynamicBrake?.Set(input.NormalisedValue);
+				if (configDynamicBrakeInputEnabled.Value && input.JoystickId == configDynamicBrakeInputJoystickId.Value && input.Offset == configDynamicBrakeInputJoystickOffset.Value)
+					PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider?.GetControl(InteriorControlsManager.ControlType.DynamicBrake)?.Set(input.NormalisedValue);
 
 				// Reverser
 				// Diesel locos specify neutral as exactly 50%. Set up a deadzone on your input device (I might make one here eventually)
-				if (configThrottleInputEnabled.Value && input.JoystickId == configReverserInputJoystickId.Value && input.Offset == configReverserInputJoystickOffset.Value)
-					PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider.Reverser?.Set(input.NormalisedValue);
+				if (configReverserInputEnabled.Value && input.JoystickId == configReverserInputJoystickId.Value && input.Offset == configReverserInputJoystickOffset.Value)
+					PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider?.GetControl(InteriorControlsManager.ControlType.Reverser)?.Set(input.NormalisedValue);
 
-				// sander
-				// horn
-				// headlightsFront
-				// headlightsRear
-				// powerOff
-				// handbrake
+				//		  Throttle,
+				//        TrainBrake,
+				//        Reverser,
+				//        IndBrake,
+				//        Handbrake,
+				//        Sander,
+				//        Horn,
+				//        HeadlightsFront,
+				//        HeadlightsRear,
+				//        StarterFuse,
+				//        ElectricsFuse,
+				//        TractionMotorFuse,
+				//        StarterControl,
+				//        DynamicBrake,
+				//        CabLight,
+				//        Wipers,
+				//        FuelCutoff,
+				//        ReleaseCyl,
+				//        IndHeadlightsTypeFront,
+				//        IndHeadlights1Front,
+				//        IndHeadlights2Front,
+				//        IndHeadlightsTypeRear,
+				//        IndHeadlights1Rear,
+				//        IndHeadlights2Rear,
+				//        IndWipers1,
+				//        IndWipers2,
+				//        IndCabLight,
+				//        IndDashLight,
+				//        GearboxA,
+				//        GearboxB,
+				//        CylCock,
+				//        Injector,
+				//        Firedoor,
+				//        Blower,
+				//        Damper,
+				//        Blowdown,
+				//        CoalDump,
+				//        Dynamo,
+				//        AirPump,
+				//        Lubricator,
+				//        Bell
 			}
 		}
 
