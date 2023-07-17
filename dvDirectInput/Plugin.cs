@@ -18,25 +18,25 @@ namespace dvDirectInput
 		// Config - Gui
 		private ConfigEntry<bool> configEnableRecentInputGUI;
 		// Config - Controls - Throttle
-		public ConfigEntry<bool> configThrottleInputEnabled;
-		public ConfigEntry<int> configThrottleInputJoystickId;
-		public ConfigEntry<JoystickOffset> configThrottleInputJoystickOffset;
+		public ConfigEntry<bool> configControlsThrottleEnabled;
+		public ConfigEntry<int> configControlsThrottleDeviceId;
+		public ConfigEntry<JoystickOffset> configControlsThrottleDeviceOffset;
 		// Config - Controls - Train Brake
-		public ConfigEntry<bool> configTrainBrakeInputEnabled;
-		public ConfigEntry<int> configTrainBrakeInputJoystickId;
-		public ConfigEntry<JoystickOffset> configTrainBrakeInputJoystickOffset;
+		public ConfigEntry<bool> configControlsTrainBrakeEnabled;
+		public ConfigEntry<int> configControlsTrainBrakeDeviceId;
+		public ConfigEntry<JoystickOffset> configControlsTrainBrakeDeviceOffset;
 		// Config - Controls - Independent Brake
-		public ConfigEntry<bool> configIndependentBrakeInputEnabled;
-		public ConfigEntry<int> configIndependentBrakeInputJoystickId;
-		public ConfigEntry<JoystickOffset> configIndependentBrakeInputJoystickOffset;
+		public ConfigEntry<bool> configControlsIndependentBrakeEnabled;
+		public ConfigEntry<int> configControlsIndependentBrakeDeviceId;
+		public ConfigEntry<JoystickOffset> configControlsIndependentBrakeDeviceOffset;
 		// Config - Controls - Dynamic Brake
-		public ConfigEntry<bool> configDynamicBrakeInputEnabled;
-		public ConfigEntry<int> configDynamicBrakeInputJoystickId;
-		public ConfigEntry<JoystickOffset> configDynamicBrakeInputJoystickOffset;
+		public ConfigEntry<bool> configControlsDynamicBrakeEnabled;
+		public ConfigEntry<int> configControlsDynamicBrakeDeviceId;
+		public ConfigEntry<JoystickOffset> configControlsDynamicBrakeDeviceOffset;
 		// Config - Controls - Reverser
-		public ConfigEntry<bool> configReverserInputEnabled;
-		public ConfigEntry<int> configReverserInputJoystickId;
-		public ConfigEntry<JoystickOffset> configReverserInputJoystickOffset;
+		public ConfigEntry<bool> configControlsReverserEnabled;
+		public ConfigEntry<int> configControlsReverserDeviceId;
+		public ConfigEntry<JoystickOffset> configControlsReverserDeviceOffset;
 
 		public struct Input
 		{
@@ -150,24 +150,24 @@ namespace dvDirectInput
 
 				// Copy and paste cause im lazy
 				// Throttle
-				if (configThrottleInputEnabled.Value && input.JoystickId == configThrottleInputJoystickId.Value && input.Offset == configThrottleInputJoystickOffset.Value)
+				if (configControlsThrottleEnabled.Value && input.JoystickId == configControlsThrottleDeviceId.Value && input.Offset == configControlsThrottleDeviceOffset.Value)
 					PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider?.GetControl(InteriorControlsManager.ControlType.Throttle)?.Set(input.NormalisedValue);
 
 				// Train Brake
-				if (configTrainBrakeInputEnabled.Value && input.JoystickId == configTrainBrakeInputJoystickId.Value && input.Offset == configTrainBrakeInputJoystickOffset.Value)
+				if (configControlsTrainBrakeEnabled.Value && input.JoystickId == configControlsTrainBrakeDeviceId.Value && input.Offset == configControlsTrainBrakeDeviceOffset.Value)
 					PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider?.GetControl(InteriorControlsManager.ControlType.TrainBrake).Set(input.NormalisedValue);
 
 				// Independent Brake
-				if (configIndependentBrakeInputEnabled.Value && input.JoystickId == configIndependentBrakeInputJoystickId.Value && input.Offset == configIndependentBrakeInputJoystickOffset.Value)
+				if (configControlsIndependentBrakeEnabled.Value && input.JoystickId == configControlsIndependentBrakeDeviceId.Value && input.Offset == configControlsIndependentBrakeDeviceOffset.Value)
 					PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider?.GetControl(InteriorControlsManager.ControlType.IndBrake)?.Set(input.NormalisedValue);
 
 				// Dynamic Brake
-				if (configDynamicBrakeInputEnabled.Value && input.JoystickId == configDynamicBrakeInputJoystickId.Value && input.Offset == configDynamicBrakeInputJoystickOffset.Value)
+				if (configControlsDynamicBrakeEnabled.Value && input.JoystickId == configControlsDynamicBrakeDeviceId.Value && input.Offset == configControlsDynamicBrakeDeviceOffset.Value)
 					PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider?.GetControl(InteriorControlsManager.ControlType.DynamicBrake)?.Set(input.NormalisedValue);
 
 				// Reverser
 				// Diesel locos specify neutral as exactly 50%. Set up a deadzone on your input device (I might make one here eventually)
-				if (configReverserInputEnabled.Value && input.JoystickId == configReverserInputJoystickId.Value && input.Offset == configReverserInputJoystickOffset.Value)
+				if (configControlsReverserEnabled.Value && input.JoystickId == configControlsReverserDeviceId.Value && input.Offset == configControlsReverserDeviceOffset.Value)
 					PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider?.GetControl(InteriorControlsManager.ControlType.Reverser)?.Set(input.NormalisedValue);
 
 				//		  Throttle,
@@ -268,7 +268,7 @@ namespace dvDirectInput
 
 		private void BindControlsConfigs(String section, ConfigEntry<bool> enabled, ConfigEntry<int> id, ConfigEntry<JoystickOffset> offset)
 		{
-			enabled = Config.Bind($"{section} Input",
+			enabled = Config.Bind($"Input - {section}",
 				"Enable",
 				false,
 				"Enables this input");
@@ -286,11 +286,11 @@ namespace dvDirectInput
 
 		private void BindAllControlsConfigs()
 		{
-			BindControlsConfigs("Throttle", configThrottleInputEnabled, configThrottleInputJoystickId, configThrottleInputJoystickOffset);
-			BindControlsConfigs("Train Brake", configTrainBrakeInputEnabled, configTrainBrakeInputJoystickId, configTrainBrakeInputJoystickOffset);
-			BindControlsConfigs("Independent Brake", configIndependentBrakeInputEnabled, configIndependentBrakeInputJoystickId, configIndependentBrakeInputJoystickOffset);
-			BindControlsConfigs("Dynamic Brake", configDynamicBrakeInputEnabled, configDynamicBrakeInputJoystickId, configDynamicBrakeInputJoystickOffset);
-			BindControlsConfigs("Reverser", configReverserInputEnabled, configReverserInputJoystickId, configReverserInputJoystickOffset);
+			BindControlsConfigs("Throttle", configControlsThrottleEnabled, configControlsThrottleDeviceId, configControlsThrottleDeviceOffset);
+			BindControlsConfigs("Train Brake", configControlsTrainBrakeEnabled, configControlsTrainBrakeDeviceId, configControlsTrainBrakeDeviceOffset);
+			BindControlsConfigs("Independent Brake", configControlsIndependentBrakeEnabled, configControlsIndependentBrakeDeviceId, configControlsIndependentBrakeDeviceOffset);
+			BindControlsConfigs("Dynamic Brake", configControlsDynamicBrakeEnabled, configControlsDynamicBrakeDeviceId, configControlsDynamicBrakeDeviceOffset);
+			BindControlsConfigs("Reverser", configControlsReverserEnabled, configControlsReverserDeviceId, configControlsReverserDeviceOffset);
 		}
 	}
 
