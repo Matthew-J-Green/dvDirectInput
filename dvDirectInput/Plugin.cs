@@ -18,7 +18,7 @@ namespace dvDirectInput
 	public class Plugin : BaseUnityPlugin
 	{
 		// Items corresponding to the controls config
-		public class ConfigControls
+		private class ConfigControls
 		{
 			public ConfigEntry<bool> Enabled { get; set; }
 			public ConfigEntry<int> DeviceId { get; set; }
@@ -31,22 +31,22 @@ namespace dvDirectInput
 
 		// Config - Controls
 		// Just a big list storing every input we want to control
-		public List<ConfigControls> configControls = new List<ConfigControls>();
+		private List<ConfigControls> configControls = new();
 
 		// Items used to identify a control device. we could actually pass along the joystick object here instead of the ID
 		public struct Input
 		{
 			public int JoystickId { get; set; }
 			public int Value { get; set; }
-			public float NormalisedValue => (float)Value / UInt16.MaxValue;
+			public readonly float NormalisedValue => (float)Value / UInt16.MaxValue;
 			public int Timestamp { get; set; }
 			public JoystickOffset Offset;
 
 		}
 
-		private List<Joystick> joysticks = new List<Joystick>();
-		private Queue<Input> inputQueue = new Queue<Input>();
-		private List<Queue<JoystickUpdate>> joysticksRecentInputs = new List<Queue<JoystickUpdate>>();
+		private List<Joystick> joysticks = new();
+		private Queue<Input> inputQueue = new();
+		private List<Queue<JoystickUpdate>> joysticksRecentInputs = new();
 
 		// Loading Mod
 		private void Awake()
@@ -69,7 +69,7 @@ namespace dvDirectInput
 			var devices = directInput.GetDevices(DeviceClass.GameControl, DeviceEnumerationFlags.AllDevices);
 			foreach (var device in devices)
 			{
-				Joystick joystick = new Joystick(directInput, device.InstanceGuid);
+				var joystick = new Joystick(directInput, device.InstanceGuid);
 				// joystick.Properties.Range is not implemented and will throw an error
 				
 				foreach (var obj in joystick.GetObjects())
@@ -147,7 +147,7 @@ namespace dvDirectInput
 					// We should probably do a lookup for the inputs against the mappings instead of iterating
 					if (configControl.val.Enabled.Value && input.JoystickId == configControl.val.DeviceId.Value && input.Offset == configControl.val.DeviceOffset.Value)
 					{
-						ControlReference control = new ControlReference();
+						var control = new ControlReference();
 						if(!PlayerManager.Car?.interior.GetComponentInChildren<InteriorControlsManager>().TryGetControl((ControlType)configControl.idx, out control) ?? true) return;
 						control.controlImplBase?.SetValue(input.NormalisedValue);
 						break;
@@ -167,7 +167,7 @@ namespace dvDirectInput
 			// Controls
 			foreach (var configControl in configControls.Select((val, idx) => new { idx, val }))
 			{
-				BindControlsConfigs($"{((ControlType)configControl.idx).ToString()}", configControl.val);
+				BindControlsConfigs($"{(ControlType)configControl.idx}", configControl.val);
 			}
 		}
 
@@ -203,7 +203,7 @@ namespace dvDirectInput
 					var offsetList = new SortedSet<JoystickOffset>(joysticksRecentInputs[joystick.idx].Select(val => val.Offset).ToList().Distinct());
 
 					// Just do a bunch of GUI stuff
-					GUIStyle style = new GUIStyle();
+					var style = new GUIStyle();
 					style.alignment = TextAnchor.MiddleLeft;
 					style.stretchWidth = false;
 					style.normal.textColor = Color.white;
