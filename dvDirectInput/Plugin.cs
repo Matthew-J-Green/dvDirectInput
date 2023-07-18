@@ -56,7 +56,7 @@ namespace dvDirectInput
 
 			// Initialise configControls
 			// ControlType contains all the controllable elements. We can just create a list with all the elements.
-			// We should probably do a key value pair instead of this madness, but it works. The ControlType is the index of this list.
+			// The ControlType is the index of this list.
 			for (int i = 0; i < Enum.GetNames(typeof(ControlType)).Length; i++)
 			{
 				configControls.Add(new ConfigControls());
@@ -70,7 +70,10 @@ namespace dvDirectInput
 			foreach (var device in devices)
 			{
 				Joystick joystick = new Joystick(directInput, device.InstanceGuid);
-				Logger.LogInfo($"DirectInput found device: {joystick.Information.ProductName}, {joystick.Properties.JoystickId}");
+				// joystick.Properties.Range is not implemented and will throw an error
+				
+				foreach (var obj in joystick.GetObjects())
+					Logger.LogInfo($"ID: {joystick.Properties.JoystickId}, Device: {joystick.Properties.ProductName}, Input:{obj.Name}");
 
 				// Set the max number of entries the joystick will return from a poll event via GetBufferedData()
 				joystick.Properties.BufferSize = 128;
@@ -81,6 +84,8 @@ namespace dvDirectInput
 
 				joysticksRecentInputs.Add(new Queue<JoystickUpdate>());
 			}
+			if (joysticksRecentInputs.Count() == 0)
+				Logger.LogInfo($"No input devices found");
 
 			BindAllConfigs();
 		}
