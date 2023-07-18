@@ -142,9 +142,11 @@ namespace dvDirectInput
 					// We should probably do a lookup for the inputs against the mappings instead of iterating
 					if (configControl.val.Enabled.Value && input.JoystickId == configControl.val.DeviceId.Value && input.Offset == configControl.val.DeviceOffset.Value)
 					{
-						PlayerManager.Car?.GetComponent<SimController>()?.controlsOverrider?.GetControl((ControlType)configControl.idx)?.Set(input.NormalisedValue);
+						ControlReference control = new ControlReference();
+						if(!PlayerManager.Car?.interior.GetComponentInChildren<InteriorControlsManager>().TryGetControl((ControlType)configControl.idx, out control) ?? true) return;
+						control.controlImplBase?.SetValue(input.NormalisedValue);
 						break;
-					}						
+					}
 				}				
 			}
 		}
