@@ -38,9 +38,19 @@ namespace dvDirectInput
 		{
 			public int JoystickId { get; set; }
 			public int Value { get; set; }
+
+			// There are 3 types of inputs with associated ranges
+			// Axes 0 - 65535
+			// Button 0, 128
+			// POV -1 (released), 0 (up), 4500, 9000(right), 13500, 18000(down), 22500, 27000(left), 31500
 			public readonly float NormalisedValue => (float)Value / UInt16.MaxValue;
 			public int Timestamp { get; set; }
 			public JoystickOffset Offset;
+
+			public override readonly string ToString()
+			{
+				return string.Format(CultureInfo.InvariantCulture, "ID: {0}, Offset: {1}, Value: {2}, Timestamp {3}", JoystickId, Offset, Value, Timestamp);
+			}
 
 		}
 
@@ -61,7 +71,13 @@ namespace dvDirectInput
 			{
 				configControls.Add(new ConfigControls());
 			}
-			
+
+			// Bind GUI Config
+			configEnableRecentInputGUI = Config.Bind("Debug.GUI",
+				"Enable",
+				true,
+				"Enable/Disable displaying recent inputs. Use this to identify the inputs for configuring the controls");
+
 			// Initialise all Direct Input game controllers as joysticks
 			// We may want to run this in the main logic in case of devices attached on the fly
 			// Could be more complicated than it sounds
@@ -70,24 +86,92 @@ namespace dvDirectInput
 			foreach (var device in devices)
 			{
 				var joystick = new Joystick(directInput, device.InstanceGuid);
-				// joystick.Properties.Range is not implemented and will throw an error
-				
-				foreach (var obj in joystick.GetObjects())
-					Logger.LogInfo($"ID: {joystick.Properties.JoystickId}, Device: {joystick.Properties.ProductName}, Input:{obj.Name}");
 
-				// Set the max number of entries the joystick will return from a poll event via GetBufferedData()
+				// Set some device properties
 				joystick.Properties.BufferSize = 128;
 
 				// Open the Joystick and add it to a list
 				joystick.Acquire();
+
 				joysticks.Add(joystick);
-
 				joysticksRecentInputs.Add(new Queue<JoystickUpdate>());
-			}
-			if (joysticksRecentInputs.Count() == 0)
-				Logger.LogInfo($"No input devices found");
 
-			BindAllConfigs();
+				// Just a bunch of device information
+				if (configEnableRecentInputGUI.Value)
+				{
+					Logger.LogInfo($"");
+					Logger.LogInfo($"Device Fields");
+					foreach (var field in device.GetType().GetFields())
+					{
+						Logger.LogInfo($"{field.Name}, {field.GetValue(device)}");
+					}
+
+					Logger.LogInfo($"");
+					Logger.LogInfo($"Joystick Properties");
+					foreach (var prop in joystick.GetType().GetProperties())
+					{
+						Logger.LogInfo($"Joystick Properties for {prop.Name}");
+						if (joystick.GetType().GetProperty(prop.Name).GetValue(joystick) == null)
+							continue;
+						if (joystick.GetType().GetProperty(prop.Name).GetValue(joystick).GetType().GetProperties().Length > 0)
+						{
+							foreach (var subprop in joystick.GetType().GetProperty(prop.Name).GetValue(joystick).GetType().GetProperties())
+							{
+								string val = "";
+								try
+								{
+									val = subprop.GetValue(prop.GetValue(joystick)).ToString();
+								}
+								catch (Exception e)
+								{
+									val = e.Message;
+								}
+								Logger.LogInfo($"{prop.Name}, {subprop.Name}, {val}");
+							}
+						}
+						Logger.LogInfo($"");
+						Logger.LogInfo($"Joystick Fields for {prop.Name}");
+						if (joystick.GetType().GetProperty(prop.Name).GetValue(joystick).GetType().GetProperties().Length > 0)
+						{
+							foreach (var field in joystick.GetType().GetProperty(prop.Name).GetValue(joystick).GetType().GetFields())
+							{
+								string val = "";
+								try
+								{
+									val = field.GetValue(prop.GetValue(joystick)).ToString();
+								}
+								catch (Exception e)
+								{
+									val = e.Message;
+								}
+								Logger.LogInfo($"{prop.Name}, {field.Name}, {val}");
+							}
+						}
+						Logger.LogInfo($"");
+					}
+
+					Logger.LogInfo($"");
+					Logger.LogInfo($"Joystick Object Fields");
+					foreach (var obj in joystick.GetObjects())
+					{
+						foreach (var field in obj.GetType().GetFields())
+						{
+							Logger.LogInfo($"ID: {joystick.Properties.JoystickId}, Device: {joystick.Properties.ProductName}, {field.Name}: {field.GetValue(obj)}");
+						}
+						Logger.LogInfo($"");
+					}
+				}
+
+			}
+
+			if (joysticksRecentInputs.Count() == 0)
+				Logger.LogWarning($"No input devices found");
+
+			// Bind Controls Config
+			foreach (var configControl in configControls.Select((val, idx) => new { idx, val }))
+			{
+				BindControlsConfigs($"{(ControlType)configControl.idx}", configControl.val);
+			}
 		}
 
 		// Every Frame
@@ -108,6 +192,7 @@ namespace dvDirectInput
 					// GUI Logic - Copy of inputs
 					if (configEnableRecentInputGUI.Value)
 					{
+						Logger.LogInfo($"{input}");
 						joysticksRecentInputs[joystick.idx].Enqueue(data);
 						currentTimestamp = data.Timestamp;
 					}
@@ -148,26 +233,11 @@ namespace dvDirectInput
 					if (configControl.val.Enabled.Value && input.JoystickId == configControl.val.DeviceId.Value && input.Offset == configControl.val.DeviceOffset.Value)
 					{
 						var control = new ControlReference();
-						if(!PlayerManager.Car?.interior.GetComponentInChildren<InteriorControlsManager>().TryGetControl((ControlType)configControl.idx, out control) ?? true) return;
+						if (!PlayerManager.Car?.interior.GetComponentInChildren<InteriorControlsManager>().TryGetControl((ControlType)configControl.idx, out control) ?? true) return;
 						control.controlImplBase?.SetValue(input.NormalisedValue);
 						break;
 					}
-				}				
-			}
-		}
-
-		private void BindAllConfigs()
-		{
-			// GUI
-			configEnableRecentInputGUI = Config.Bind("Debug - GUI",
-				"Enable",
-				true,
-				"Enable/Disable displaying recent inputs. Use this to identify the inputs for configuring the controls");
-
-			// Controls
-			foreach (var configControl in configControls.Select((val, idx) => new { idx, val }))
-			{
-				BindControlsConfigs($"{(ControlType)configControl.idx}", configControl.val);
+				}
 			}
 		}
 
@@ -203,9 +273,11 @@ namespace dvDirectInput
 					var offsetList = new SortedSet<JoystickOffset>(joysticksRecentInputs[joystick.idx].Select(val => val.Offset).ToList().Distinct());
 
 					// Just do a bunch of GUI stuff
-					var style = new GUIStyle();
-					style.alignment = TextAnchor.MiddleLeft;
-					style.stretchWidth = false;
+					var style = new GUIStyle
+					{
+						alignment = TextAnchor.MiddleLeft,
+						stretchWidth = false
+					};
 					style.normal.textColor = Color.white;
 					style.normal.background = Texture2D.grayTexture;
 
