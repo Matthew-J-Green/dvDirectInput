@@ -58,6 +58,16 @@ namespace dvDirectInput
 
 		}
 
+		string Try<T>(Func<string> func)
+		{
+			try {
+				return func();
+			} catch(Exception e)
+			{
+				return e.Message;
+			}
+		}
+
 		private List<Joystick> joysticks = new();
 		private Queue<Input> inputQueue = new();
 		private List<Queue<JoystickUpdate>> joysticksRecentInputs = new();
@@ -157,15 +167,24 @@ namespace dvDirectInput
 					}
 
 					Logger.LogInfo($"");
-					Logger.LogInfo($"Joystick Object Fields");
+					Logger.LogInfo($"Joystick Objects");
 					foreach (var obj in joystick.GetObjects())
 					{
+						Logger.LogInfo($"Joystick Object Fields");
 						foreach (var field in obj.GetType().GetFields())
 						{
 							Logger.LogInfo($"ID: {joystick.Properties.JoystickId}, Device: {joystick.Properties.ProductName}, {field.Name}: {field.GetValue(obj)}");
 						}
-						Logger.LogInfo($"");
+
+						Logger.LogInfo($"Joystick Object Properties");
+						Logger.LogInfo($"Deadzone: {Try<ObjectProperties>( () => joystick.GetObjectPropertiesById(obj.ObjectId).DeadZone.ToString())}");
+						Logger.LogInfo($"Granularity: {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).Granularity.ToString())}");
+						Logger.LogInfo($"LogicalRange: {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).LogicalRange.Minimum.ToString())}, {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).LogicalRange.Maximum.ToString())}");
+						Logger.LogInfo($"PhysicalRange: {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).PhysicalRange.Minimum.ToString())}, {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).PhysicalRange.Maximum.ToString())}");
+						Logger.LogInfo($"Range: {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).Range.Minimum.ToString())}, {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).Range.Maximum.ToString())}");
+						Logger.LogInfo($"Saturation: {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).Saturation.ToString())}");
 					}
+					Logger.LogInfo($"");
 				}
 
 			}
