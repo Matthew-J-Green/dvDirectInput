@@ -57,6 +57,7 @@ namespace dvDirectInput
 		private List<Joystick> joysticks = new();
 		private Queue<Input> inputQueue = new();
 		private List<Queue<JoystickUpdate>> joysticksRecentInputs = new();
+		List<int> acceptableIDs = new();
 
 		// Loading Mod
 		private void Awake()
@@ -95,6 +96,7 @@ namespace dvDirectInput
 
 				joysticks.Add(joystick);
 				joysticksRecentInputs.Add(new Queue<JoystickUpdate>());
+				acceptableIDs.Add(joystick.Properties.JoystickId);
 
 				// Just a bunch of device information
 				if (configEnableRecentInputGUI.Value)
@@ -165,7 +167,10 @@ namespace dvDirectInput
 			}
 
 			if (joysticksRecentInputs.Count() == 0)
+			{
 				Logger.LogWarning($"No input devices found");
+				return;
+			}
 
 			// Bind Controls Config
 			foreach (var configControl in configControls.Select((val, idx) => new { idx, val }))
@@ -252,7 +257,7 @@ namespace dvDirectInput
 			config.DeviceId = Config.Bind($"Controls.{section}",
 				"Input Device ID",
 				0,
-				"ID of input device provided by GUI");
+				new ConfigDescription("ID of input device provided by GUI", new AcceptableValueList<int>(acceptableIDs.ToArray())));
 
 			config.DeviceOffset = Config.Bind($"Controls.{section}",
 				"Input Device Offset",
