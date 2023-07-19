@@ -16,7 +16,6 @@ This plugin adds input device support to Derail Valley
 * Diesel locos have a 3 state reverser. Neutral is exactly 50%, you won't get neutral unless you set up a deadzone on your input device
 * Xbox gamepads only work when the game is focused. Windows seems to be grabbing the inputs before they get to the game
 * Unplugging devices will crash the mod. It'll be fixed at some point.
-* Inputs are not currently invertable
 * There is no deadzone support. Configure this in you devices software for now
 * This mod assumes the device outputs its axis with values between 0 and 65535. It's unclear if all devices use this range. If you are having issues not being able to reach full/zero throttle - first check windows game controllers to see if that reports the full range, then check your device software utility to see if it's calibrated/configured correctly. If that doesnt fix it, open the log or view the comand line to see what range of values are reported and raise an issue.
 * This mod hasn't been tested that much. Prepare for things to break

@@ -23,6 +23,7 @@ namespace dvDirectInput
 			public ConfigEntry<bool> Enabled { get; set; }
 			public ConfigEntry<int> DeviceId { get; set; }
 			public ConfigEntry<JoystickOffset> DeviceOffset { get; set; }
+			public ConfigEntry<bool> InvertControl { get; set; }
 
 		}
 
@@ -239,7 +240,7 @@ namespace dvDirectInput
 					{
 						var control = new ControlReference();
 						if (!PlayerManager.Car?.interior.GetComponentInChildren<InteriorControlsManager>().TryGetControl((ControlType)configControl.idx, out control) ?? true) return;
-						control.controlImplBase?.SetValue(input.NormalisedValue);
+						control.controlImplBase?.SetValue(configControl.val.InvertControl.Value ? 1.0f - input.NormalisedValue : input.NormalisedValue);
 						break;
 					}
 				}
@@ -263,6 +264,11 @@ namespace dvDirectInput
 				"Input Device Offset",
 				JoystickOffset.X,
 				"Input device offset axis/button provided by GUI");
+
+			config.InvertControl = Config.Bind($"Controls.{section}",
+				"Invert Input",
+				false,
+				"Invert the control");
 
 		}
 
