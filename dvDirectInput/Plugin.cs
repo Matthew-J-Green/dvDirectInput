@@ -35,22 +35,25 @@ namespace dvDirectInput
 		private List<ConfigControls> configControls = new();
 
 		// Items used to identify a control device. we could actually pass along the joystick object here instead of the ID
-		public struct Input
+		public class Input
 		{
-			public int JoystickId { get; set; }
+			public Joystick JoystickObj { get; set; }
+			public JoystickOffset Offset { get; set; }
 			public int Value { get; set; }
 
 			// There are 3 types of inputs with associated ranges
 			// Axes 0 - 65535
 			// Button 0, 128
 			// POV -1 (released), 0 (up), 4500, 9000(right), 13500, 18000(down), 22500, 27000(left), 31500
-			public readonly float NormalisedValue => (float)Value / UInt16.MaxValue;
-			public int Timestamp { get; set; }
-			public JoystickOffset Offset;
-
-			public override readonly string ToString()
+			public float NormalisedValue()
 			{
-				return string.Format(CultureInfo.InvariantCulture, "ID: {0}, Offset: {1}, Value: {2}, Timestamp {3}", JoystickId, Offset, Value, Timestamp);
+				return (float)Value / UInt16.MaxValue;
+			}
+			public int Timestamp { get; set; }
+
+			public override string ToString()
+			{
+				return string.Format(CultureInfo.InvariantCulture, "ID: {0}, Offset: {1}, Value: {2}, Timestamp {3}", JoystickObj.Properties.JoystickId, Offset, Value, Timestamp);
 			}
 
 		}
@@ -192,7 +195,7 @@ namespace dvDirectInput
 				foreach (var data in joystick.val.GetBufferedData())
 				{
 					// Chuck all the inputs on a queue
-					var input = new Input() { JoystickId = joystick.val.Properties.JoystickId, Offset = data.Offset, Value = data.Value, Timestamp = data.Timestamp };
+					var input = new Input() { JoystickObj = joystick.val, Offset = data.Offset, Value = data.Value, Timestamp = data.Timestamp };
 					inputQueue.Enqueue(input);
 
 					// GUI Logic - Copy of inputs
@@ -236,11 +239,11 @@ namespace dvDirectInput
 				foreach (var configControl in configControls.Select((val, idx) => new { idx, val }))
 				{
 					// We should probably do a lookup for the inputs against the mappings instead of iterating
-					if (configControl.val.Enabled.Value && input.JoystickId == configControl.val.DeviceId.Value && input.Offset == configControl.val.DeviceOffset.Value)
+					if (configControl.val.Enabled.Value && input.JoystickObj.Properties.JoystickId == configControl.val.DeviceId.Value && input.Offset == configControl.val.DeviceOffset.Value)
 					{
 						var control = new ControlReference();
 						if (!PlayerManager.Car?.interior.GetComponentInChildren<InteriorControlsManager>().TryGetControl((ControlType)configControl.idx, out control) ?? true) return;
-						control.controlImplBase?.SetValue(configControl.val.InvertControl.Value ? 1.0f - input.NormalisedValue : input.NormalisedValue);
+						control.controlImplBase?.SetValue(configControl.val.InvertControl.Value ? 1.0f - input.NormalisedValue() : input.NormalisedValue());
 						break;
 					}
 				}
