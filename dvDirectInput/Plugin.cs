@@ -73,7 +73,7 @@ namespace dvDirectInput
 			}
 
 			// Bind GUI Config
-			configEnableRecentInputGUI = Config.Bind("Debug.GUI",
+			configEnableRecentInputGUI = Config.Bind("_Debug.GUI",
 				"Enable",
 				true,
 				"Enable/Disable displaying recent inputs. Use this to identify the inputs for configuring the controls");
@@ -244,17 +244,17 @@ namespace dvDirectInput
 		private void BindControlsConfigs(String section, ConfigControls config)
 		{
 			// We should probably bind and unbind the ID and offset based on the enable signal to de-clutter the GUI
-			config.Enabled = Config.Bind($"Controls - {section}",
+			config.Enabled = Config.Bind($"Controls.{section}",
 				"Enable",
 				false,
 				"Enables this input");
 
-			config.DeviceId = Config.Bind($"Controls - {section}",
+			config.DeviceId = Config.Bind($"Controls.{section}",
 				"Input Device ID",
 				0,
 				"ID of input device provided by GUI");
 
-			config.DeviceOffset = Config.Bind($"Controls - {section}",
+			config.DeviceOffset = Config.Bind($"Controls.{section}",
 				"Input Device Offset",
 				JoystickOffset.X,
 				"Input device offset axis/button provided by GUI");

@@ -14,7 +14,7 @@ This plugin adds input device support to Derail Valley
 * Button support isn't officially setup, however they may work. It would be useful to allow buttons to only toggle on press to enable support for converting a momentary button to a latching one. This would additionally allow for rotary encoders to work
 * While the diesel locos have discrete throttle steps. Analogue inputs work fine but may be better with thresholds
 * Diesel locos have a 3 state reverser. Neutral is exactly 50%, you won't get neutral unless you set up a deadzone on your input device
-* Xbox gamepads don't seem to work, not that they're of much use for controlling a loco
+* Xbox gamepads only work when the game is focused. Windows seems to be grabbing the inputs before they get to the game
 * Unplugging devices will crash the mod. It'll be fixed at some point.
 * Inputs are not currently invertable
 * There is no deadzone support. Configure this in you devices software for now
@@ -37,7 +37,8 @@ The `dvDirectInput.cfg` file is in the `BepInEx\config` folder. However, it's re
 
 Make sure your input devices are plugged in before launching Derail Valley. This mod currently does not dynamically load/unload devices so don't unplug devices mid game too.
 
-On first launch a GUI is presented in the top left. It lists all the input devices with its name, a numerical ID and the mapping of the most recent inputs used. This can be disabled in the Configuration Manager
+On first launch a GUI is presented in the top left. It lists all the input devices with its name, a numerical ID and the mapping of the most recent inputs used. This can be disabled in the Configuration Manager.\
+Leaving this enabled may cause a lot of lag as all inputs are reported to the console too.
 
 Open BepInEx Configuration Manager to configure the mod. Here you can map the input devices to exposed locomotive controls. Make sure the control is enabled for it to take effect.
 
