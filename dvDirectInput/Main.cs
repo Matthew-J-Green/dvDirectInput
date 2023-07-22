@@ -4,18 +4,16 @@ using System.Globalization;
 using System.Linq;
 using UnityModManagerNet;
 using UnityEngine;
-using UnityEngine.UI;
 using SharpDX.DirectInput;
 using DV.HUD;
 using static DV.HUD.InteriorControlsManager;
-using static dvDirectInput.Settings;
 
 
 namespace dvDirectInput
 {
-	public class Settings : UnityModManager.ModSettings, IDrawable
+	public class Settings : UnityModManager.ModSettings
 	{
-		[Draw("DebugGUI")] public bool configEnableRecentInputGUI = true;
+		public bool configEnableRecentInputGUI = true;
 
 		public List<ConfigControls> configControls = new();
 
@@ -63,6 +61,81 @@ namespace dvDirectInput
 				return string.Format(CultureInfo.InvariantCulture, "ID: {0}, Offset: {1}, Value: {2}, Timestamp {3}", JoystickObj.Properties.JoystickId, Offset, Value, Timestamp);
 			}
 
+			// Just go get a bunch of properties and fields of the joystick and its objects
+			public static void JoystickDebug(DeviceInstance device, Joystick joystick)
+			{
+				mod.Logger.Log($"");
+				mod.Logger.Log($"Device Fields");
+				foreach (var field in device.GetType().GetFields())
+				{
+					mod.Logger.Log($"{field.Name}, {field.GetValue(device)}");
+				}
+
+				mod.Logger.Log($"");
+				mod.Logger.Log($"Joystick Properties");
+				foreach (var prop in joystick.GetType().GetProperties())
+				{
+					mod.Logger.Log($"Joystick Properties for {prop.Name}");
+					if (joystick.GetType().GetProperty(prop.Name).GetValue(joystick) == null)
+						continue;
+					if (joystick.GetType().GetProperty(prop.Name).GetValue(joystick).GetType().GetProperties().Length > 0)
+					{
+						foreach (var subprop in joystick.GetType().GetProperty(prop.Name).GetValue(joystick).GetType().GetProperties())
+						{
+							string val = "";
+							try
+							{
+								val = subprop.GetValue(prop.GetValue(joystick)).ToString();
+							}
+							catch (Exception e)
+							{
+								val = e.Message;
+							}
+							mod.Logger.Log($"{prop.Name}, {subprop.Name}, {val}");
+						}
+					}
+					mod.Logger.Log($"");
+					mod.Logger.Log($"Joystick Fields for {prop.Name}");
+					if (joystick.GetType().GetProperty(prop.Name).GetValue(joystick).GetType().GetProperties().Length > 0)
+					{
+						foreach (var field in joystick.GetType().GetProperty(prop.Name).GetValue(joystick).GetType().GetFields())
+						{
+							string val = "";
+							try
+							{
+								val = field.GetValue(prop.GetValue(joystick)).ToString();
+							}
+							catch (Exception e)
+							{
+								val = e.Message;
+							}
+							mod.Logger.Log($"{prop.Name}, {field.Name}, {val}");
+						}
+					}
+					mod.Logger.Log($"");
+				}
+
+				mod.Logger.Log($"");
+				mod.Logger.Log($"Joystick Objects");
+				foreach (var obj in joystick.GetObjects())
+				{
+					mod.Logger.Log($"Joystick Object Fields");
+					foreach (var field in obj.GetType().GetFields())
+					{
+						mod.Logger.Log($"ID: {joystick.Properties.JoystickId}, Device: {joystick.Properties.ProductName}, {field.Name}: {field.GetValue(obj)}");
+					}
+
+					mod.Logger.Log($"Joystick Object Properties");
+					mod.Logger.Log($"Deadzone: {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).DeadZone.ToString())}");
+					mod.Logger.Log($"Granularity: {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).Granularity.ToString())}");
+					mod.Logger.Log($"LogicalRange: {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).LogicalRange.Minimum.ToString())}, {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).LogicalRange.Maximum.ToString())}");
+					mod.Logger.Log($"PhysicalRange: {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).PhysicalRange.Minimum.ToString())}, {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).PhysicalRange.Maximum.ToString())}");
+					mod.Logger.Log($"Range: {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).Range.Minimum.ToString())}, {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).Range.Maximum.ToString())}");
+					mod.Logger.Log($"Saturation: {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).Saturation.ToString())}");
+				}
+				mod.Logger.Log($"");
+			}
+
 		}
 
 		static string Try<T>(Func<string> func)
@@ -87,20 +160,26 @@ namespace dvDirectInput
 		{
 			mod = modEntry;
 
+			// Load settings
 			settings = Settings.Load<Settings>(modEntry);
 
-			// Plugin startup logic
-			mod.Logger.Log($"Mod [{mod.Info.DisplayName}|{mod.Info.Version}] is loaded!");
+			// Wipe the controls config if its not the size we are expecting
+			if (settings.configControls.Count != Enum.GetNames(typeof(ControlType)).Length)
+				settings.configControls.Clear();
 
-			// Initialise configControls
-			// ControlType contains all the controllable elements. We can just create a list with all the elements.
-			// The ControlType is the index of this list.
-			for (int i = 0; i < Enum.GetNames(typeof(ControlType)).Length; i++)
+			// Create the number of controls we desire if we havent loaded a suitable config
+			if (settings.configControls.Count == 0)
 			{
-				settings.configControls.Add(new Settings.ConfigControls());
+				// ControlType contains all the controllable elements in a loco
+				// We can create a list to allow a mapping of inputs to controls
+				// The ControlType is the index of this list
+				for (int i = 0; i < Enum.GetNames(typeof(ControlType)).Length; i++)
+				{
+					settings.configControls.Add(new Settings.ConfigControls());
+				}
 			}
 
-			// Initialise all Direct Input game controllers as joysticks
+			// Initialise all Direct Input game controllers
 			// We may want to run this in the main logic in case of devices attached on the fly
 			// Could be more complicated than it sounds
 			var directInput = new DirectInput();
@@ -120,7 +199,7 @@ namespace dvDirectInput
 				acceptableIDs.Add(joystick.Properties.JoystickId);
 
 				if (settings.configEnableRecentInputGUI)
-					JoystickDebug(device, joystick);
+					Input.JoystickDebug(device, joystick);
 			}
 
 			if (joysticksRecentInputs.Count() == 0)
@@ -245,7 +324,11 @@ namespace dvDirectInput
 		// Draw to UMM settings
 		static void OnGUI(UnityModManager.ModEntry modEntry)
 		{
-			settings.Draw(modEntry);
+			GUILayout.Label("Debug");
+			GUILayout.BeginVertical();
+			settings.configEnableRecentInputGUI = GUILayout.Toggle(settings.configEnableRecentInputGUI, "Enable GUI");
+			GUILayout.EndVertical();
+
 
 			GUILayout.Label("Controls");
 			GUILayout.BeginVertical();
@@ -264,13 +347,13 @@ namespace dvDirectInput
 
 				configControl.val.Enabled = GUILayout.Toggle(configControl.val.Enabled, "Enabled");
 
-				GUILayout.BeginHorizontal(GUILayout.Width(100));
+				GUILayout.BeginHorizontal(GUILayout.Width(200));
 				GUILayout.Label("Device ID", GUILayout.Width(100));
-				configControl.val.DeviceId = int.Parse(GUILayout.TextField(configControl.val.DeviceId.ToString(), "Device ID"));
+				configControl.val.DeviceId = int.Parse(GUILayout.TextField(configControl.val.DeviceId.ToString()));
 				GUILayout.EndHorizontal();
 				GUILayout.BeginHorizontal(GUILayout.Width(200));
 				GUILayout.Label("Device Offset", GUILayout.Width(100));
-				configControl.val.DeviceOffset = (JoystickOffset)int.Parse(GUILayout.TextField(((int)configControl.val.DeviceOffset).ToString(), "Device Offset"));
+				configControl.val.DeviceOffset = (JoystickOffset)int.Parse(GUILayout.TextField(((int)configControl.val.DeviceOffset).ToString()));
 				GUILayout.EndHorizontal();
 				configControl.val.InvertControl = GUILayout.Toggle(configControl.val.InvertControl, "Invert");
 
@@ -284,81 +367,6 @@ namespace dvDirectInput
 			settings.Save(modEntry);
 		}
 
-
-		// Just go get a bunch of properties and fields of the joystick and its objects
-		public static void JoystickDebug(DeviceInstance device, Joystick joystick)
-		{			
-				mod.Logger.Log($"");
-				mod.Logger.Log($"Device Fields");
-				foreach (var field in device.GetType().GetFields())
-				{
-					mod.Logger.Log($"{field.Name}, {field.GetValue(device)}");
-				}
-
-				mod.Logger.Log($"");
-				mod.Logger.Log($"Joystick Properties");
-				foreach (var prop in joystick.GetType().GetProperties())
-				{
-					mod.Logger.Log($"Joystick Properties for {prop.Name}");
-					if (joystick.GetType().GetProperty(prop.Name).GetValue(joystick) == null)
-						continue;
-					if (joystick.GetType().GetProperty(prop.Name).GetValue(joystick).GetType().GetProperties().Length > 0)
-					{
-						foreach (var subprop in joystick.GetType().GetProperty(prop.Name).GetValue(joystick).GetType().GetProperties())
-						{
-							string val = "";
-							try
-							{
-								val = subprop.GetValue(prop.GetValue(joystick)).ToString();
-							}
-							catch (Exception e)
-							{
-								val = e.Message;
-							}
-							mod.Logger.Log($"{prop.Name}, {subprop.Name}, {val}");
-						}
-					}
-					mod.Logger.Log($"");
-					mod.Logger.Log($"Joystick Fields for {prop.Name}");
-					if (joystick.GetType().GetProperty(prop.Name).GetValue(joystick).GetType().GetProperties().Length > 0)
-					{
-						foreach (var field in joystick.GetType().GetProperty(prop.Name).GetValue(joystick).GetType().GetFields())
-						{
-							string val = "";
-							try
-							{
-								val = field.GetValue(prop.GetValue(joystick)).ToString();
-							}
-							catch (Exception e)
-							{
-								val = e.Message;
-							}
-							mod.Logger.Log($"{prop.Name}, {field.Name}, {val}");
-						}
-					}
-					mod.Logger.Log($"");
-				}
-
-				mod.Logger.Log($"");
-				mod.Logger.Log($"Joystick Objects");
-				foreach (var obj in joystick.GetObjects())
-				{
-					mod.Logger.Log($"Joystick Object Fields");
-					foreach (var field in obj.GetType().GetFields())
-					{
-						mod.Logger.Log($"ID: {joystick.Properties.JoystickId}, Device: {joystick.Properties.ProductName}, {field.Name}: {field.GetValue(obj)}");
-					}
-
-					mod.Logger.Log($"Joystick Object Properties");
-					mod.Logger.Log($"Deadzone: {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).DeadZone.ToString())}");
-					mod.Logger.Log($"Granularity: {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).Granularity.ToString())}");
-					mod.Logger.Log($"LogicalRange: {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).LogicalRange.Minimum.ToString())}, {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).LogicalRange.Maximum.ToString())}");
-					mod.Logger.Log($"PhysicalRange: {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).PhysicalRange.Minimum.ToString())}, {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).PhysicalRange.Maximum.ToString())}");
-					mod.Logger.Log($"Range: {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).Range.Minimum.ToString())}, {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).Range.Maximum.ToString())}");
-					mod.Logger.Log($"Saturation: {Try<ObjectProperties>(() => joystick.GetObjectPropertiesById(obj.ObjectId).Saturation.ToString())}");
-				}
-				mod.Logger.Log($"");
-			}
 	}
 
 }
