@@ -3,17 +3,14 @@
 	<PropertyGroup>
 		<AssemblyName>dvDirectInput</AssemblyName>
 		<Description></Description>
-		<Version>0.4.1</Version>
+		<Version>0.5.0</Version>
 		<TargetFramework>netframework4.8</TargetFramework>
 		<LangVersion>latest</LangVersion>
 		<Nullable>enable</Nullable>
 		<WarningsAsErrors>CS8600;CS8602;CS8603</WarningsAsErrors>
-		<RestoreAdditionalProjectSources>
-			https://api.nuget.org/v3/index.json;
-			https://nuget.bepinex.dev/v3/index.json;
-		</RestoreAdditionalProjectSources>
 		<ReferencePath>
-			D:\SteamLibrary\steamapps\common\Derail Valley\DerailValley_Data\Managed
+			D:\SteamLibrary\steamapps\common\Derail Valley\DerailValley_Data\Managed\;
+			D:\SteamLibrary\steamapps\common\Derail Valley\DerailValley_Data\Managed\UnityModManager\
 		</ReferencePath>
 		<AssemblySearchPaths>$(AssemblySearchPaths);$(ReferencePath);</AssemblySearchPaths>
 		<OutputType>Library</OutputType>
@@ -22,17 +19,22 @@
 	<ItemGroup>
 		<!-- Derail Valley -->
 		<Reference Include="Assembly-CSharp" />
-		<PackageReference Include="SharpDX.DirectInput" Version="4.2.0" />
+		<Reference Include="Assembly-CSharp-firstpass" />
 
 		<!-- Third Party -->
+		<PackageReference Include="SharpDX.DirectInput" Version="4.2.0" />
 
 		<!-- Unity -->
-		<PackageReference Include="UnityEngine.Modules" Version="2019.4.40" IncludeAssets="compile" />
+		<Reference Include="UnityEngine" />
+		<Reference Include="UnityEngine.UI" />
+		<Reference Include="UnityEngine.UIModule" />
+		<Reference Include="UnityEngine.CoreModule" />
+		<Reference Include="UnityEngine.IMGUIModule" />
+		<Reference Include="UnityEngine.TextRenderingModule" />
 
 		<!-- Mod Loader -->
-		<PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
-		<PackageReference Include="BepInEx.Core" Version="5.*" />
-		<PackageReference Include="BepInEx.PluginInfoProps" Version="1.*" />
+		<Reference Include="UnityModManager" />
+		<Reference Include="0Harmony" />
 
 		<!-- Null Checking -->
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
@@ -48,7 +50,7 @@
 		<Copy SourceFiles="@(_CopyItems)" DestinationFolder="../build/" />
 
 		<!-- Copy to game plugins -->
-		<Copy SourceFiles="$(TargetPath)" DestinationFolder="D:\SteamLibrary\steamapps\common\Derail Valley\BepInEx\plugins\dvDirectInput" />
+		<Copy SourceFiles="$(TargetPath)" DestinationFolder="D:\SteamLibrary\steamapps\common\Derail Valley\Mods\dvDirectInput" />
 
 		<!-- Package after Release build -->
 		<Exec Condition="'$(ConfigurationName)' == 'Release' And '$(OS)' == 'Windows_NT'" Command="powershell -executionpolicy bypass -Command &quot;(../package.ps1)&quot;" />
