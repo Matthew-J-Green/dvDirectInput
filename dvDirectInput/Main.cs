@@ -87,10 +87,10 @@ namespace dvDirectInput
 		{
 			mod = modEntry;
 
+			settings = Settings.Load<Settings>(modEntry);
+
 			// Plugin startup logic
 			mod.Logger.Log($"Mod [{mod.Info.DisplayName}|{mod.Info.Version}] is loaded!");
-
-			settings = new Settings();
 
 			// Initialise configControls
 			// ControlType contains all the controllable elements. We can just create a list with all the elements.
