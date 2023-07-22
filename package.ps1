@@ -34,7 +34,7 @@ $null = New-Item "${ZipRootDir}\info.json" -Force -ItemType File -Value (@"
 	"AssemblyName": "${modname}.dll",
 	"EntryMethod": "${modname}.Main.Load",
 	"HomePage": "https://www.nexusmods.com/derailvalley/mods/687",
-	"Repository": "https://raw.githubusercontent.com/Matthew-J-Green/dvDirectInput/master/repository.json"
+	"Repository": "https://raw.githubusercontent.com/Matthew-J-Green/dvDirectInput/main/repostiory.json"
 }	
 "@)
 
