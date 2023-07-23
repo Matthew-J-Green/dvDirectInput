@@ -3,33 +3,36 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
-using static RootMotion.FinalIK.VRIKCalibrator;
-using static UnityModManagerNet.UnityModManager.Param;
 
 namespace dvDirectInput
 {
-	public class Input
+	public static class Input
 	{
-		public Joystick JoystickObj { get; set; }
-		public JoystickOffset Offset { get; set; }
-		public int Value { get; set; }
-		public int Timestamp { get; set; }
+		public static List<Joystick> joysticks = new();
+		public static Queue<Input.InputItem> inputQueue = new();
+		public static List<Queue<JoystickUpdate>> joysticksRecentInputs = new();
 
-		// There are 3 types of inputs with associated ranges
-		// Axes 0 - 65535
-		// Button 0, 128
-		// POV -1 (released), 0 (up), 4500, 9000(right), 13500, 18000(down), 22500, 27000(left), 31500
-		public float NormalisedValue()
+		public class InputItem
 		{
-			return (float)Value / UInt16.MaxValue;
-		}
-		
-		public override string ToString()
-		{
-			return string.Format(CultureInfo.InvariantCulture, "ID: {0}, Offset: {1}, Value: {2}, Timestamp {3}", JoystickObj.Properties.JoystickId, Offset, Value, Timestamp);
+			public Joystick JoystickObj { get; set; }
+			public JoystickOffset Offset { get; set; }
+			public int Value { get; set; }
+			public int Timestamp { get; set; }
+
+			// There are 3 types of inputs with associated ranges
+			// Axes 0 - 65535
+			// Button 0, 128
+			// POV -1 (released), 0 (up), 4500, 9000(right), 13500, 18000(down), 22500, 27000(left), 31500
+			public float NormalisedValue()
+			{
+				return (float)Value / UInt16.MaxValue;
+			}
+
+			public override string ToString()
+			{
+				return string.Format(CultureInfo.InvariantCulture, "ID: {0}, Offset: {1}, Value: {2}, Timestamp {3}", JoystickObj.Properties.JoystickId, Offset, Value, Timestamp);
+			}
 		}
 
 		// Initialise all Direct Input game controllers and associated queues
@@ -47,15 +50,14 @@ namespace dvDirectInput
 				// Open the Joystick and add it to a list
 				joystick.Acquire();
 
-				Main.joysticks.Add(joystick);
-				Main.joysticksRecentInputs.Add(new Queue<JoystickUpdate>());
-				Main.acceptableIDs.Add(joystick.Properties.JoystickId);
+				joysticks.Add(joystick);
+				joysticksRecentInputs.Add(new Queue<JoystickUpdate>());
 
 				if (Main.settings.configEnableRecentInputGUI)
 					JoystickDebug(device, joystick);
 			}
 
-			if (Main.joysticks.Count() == 0)
+			if (joysticks.Count() == 0)
 				Main.mod.Logger.Warning($"No input devices found");
 		}
 
@@ -64,32 +66,32 @@ namespace dvDirectInput
 			int currentTimestamp = 0;
 
 			// Grab inputs for all controllers
-			foreach (var joystick in Main.joysticks.Select((val, idx) => new { idx, val }))
+			foreach (var joystick in joysticks.Select((val, idx) => new { idx, val }))
 			{
 				joystick.val.Poll();
 				foreach (var data in joystick.val.GetBufferedData())
 				{
 					// Chuck all the inputs on a queue
-					var input = new Input() { JoystickObj = joystick.val, Offset = data.Offset, Value = data.Value, Timestamp = data.Timestamp };
-					Main.inputQueue.Enqueue(input);
+					var input = new InputItem() { JoystickObj = joystick.val, Offset = data.Offset, Value = data.Value, Timestamp = data.Timestamp };
+					inputQueue.Enqueue(input);
 
 					// GUI Logic - Copy of inputs
 					if (Main.settings.configEnableRecentInputGUI)
 					{
 						Main.mod.Logger.Log($"{input}");
-						Main.joysticksRecentInputs[joystick.idx].Enqueue(data);
+						joysticksRecentInputs[joystick.idx].Enqueue(data);
 						currentTimestamp = data.Timestamp;
 					}
 				}
 				// GUI Logic - Remove any inputs if they have been displayed for a suitable period
 				if (Main.settings.configEnableRecentInputGUI)
 				{
-					if (Main.joysticksRecentInputs[joystick.idx].Count > 0)
+					if (joysticksRecentInputs[joystick.idx].Count > 0)
 					{
-						while (currentTimestamp - Main.joysticksRecentInputs[joystick.idx].Peek().Timestamp > 1000)
+						while (currentTimestamp - joysticksRecentInputs[joystick.idx].Peek().Timestamp > 1000)
 						{
-							Main.joysticksRecentInputs[joystick.idx].Dequeue();
-							if (Main.joysticksRecentInputs[joystick.idx].Count == 0)
+							joysticksRecentInputs[joystick.idx].Dequeue();
+							if (joysticksRecentInputs[joystick.idx].Count == 0)
 								break;
 						}
 					}
@@ -176,10 +178,10 @@ namespace dvDirectInput
 		public static void RenderRecentInputs()
 		{
 			// Show all the recognised game controlers and inputs to the user
-			foreach (var joystick in Main.joysticks.Select((val, idx) => new { idx, val }))
+			foreach (var joystick in joysticks.Select((val, idx) => new { idx, val }))
 			{
 				// Gets unique sorted input names from the recent input list
-				var offsetList = new SortedSet<JoystickOffset>(Main.joysticksRecentInputs[joystick.idx].Select(val => val.Offset).ToList().Distinct());
+				var offsetList = new SortedSet<JoystickOffset>(joysticksRecentInputs[joystick.idx].Select(val => val.Offset).ToList().Distinct());
 				// Just do a bunch of GUI stuff
 				var style = new GUIStyle
 				{

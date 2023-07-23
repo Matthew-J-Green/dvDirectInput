@@ -1,11 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
 using UnityModManagerNet;
-using UnityEngine;
-using SharpDX.DirectInput;
-using DV.HUD;
 using static DV.HUD.InteriorControlsManager;
 
 
@@ -15,11 +9,6 @@ namespace dvDirectInput
 	{
 		public static UnityModManager.ModEntry mod;
 		public static Settings settings = new();
-
-		public static List<Joystick> joysticks = new();
-		public static Queue<Input> inputQueue = new();
-		public static List<Queue<JoystickUpdate>> joysticksRecentInputs = new();
-		public static List<int> acceptableIDs = new();
 
 		// Loading Mod
 		static bool Load(UnityModManager.ModEntry modEntry)

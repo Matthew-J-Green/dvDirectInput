@@ -1,13 +1,9 @@
 using SharpDX.DirectInput;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using UnityModManagerNet;
 using static DV.HUD.InteriorControlsManager;
-using static RootMotion.FinalIK.VRIKCalibrator;
 
 namespace dvDirectInput
 {
@@ -53,7 +49,7 @@ namespace dvDirectInput
 				style.normal.textColor = Color.white;
 				style.normal.background = Texture2D.grayTexture;
 
-				GUILayout.Label($"\t{((ControlType)configControl.idx).ToString()}");
+				GUILayout.Label($"\t{(ControlType)configControl.idx}");
 				GUILayout.BeginVertical(style);
 
 				configControl.val.Enabled = GUILayout.Toggle(configControl.val.Enabled, "Enabled");
