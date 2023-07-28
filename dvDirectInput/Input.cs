@@ -20,18 +20,26 @@ namespace dvDirectInput
 			public int Value { get; set; }
 			public int Timestamp { get; set; }
 
-			// There are 3 types of inputs with associated ranges
+			// There are 3 types of inputs with associated ranges. I assume the DirectInput uses these values for all input devices
 			// Axes 0 - 65535
 			// Button 0, 128
 			// POV -1 (released), 0 (up), 4500, 9000(right), 13500, 18000(down), 22500, 27000(left), 31500
 			public float NormalisedValue()
 			{
-				return (float)Value / UInt16.MaxValue;
+				var inputFlags = JoystickObj.GetObjectInfoByOffset((int)Offset).ObjectId.Flags;
+
+				if ((inputFlags & DeviceObjectTypeFlags.Axis) != 0)
+					return (float)Value / 65535;
+
+				if ((inputFlags & DeviceObjectTypeFlags.Button) != 0)
+					return (float)Value / 128;
+
+				return 0;
 			}
 
 			public override string ToString()
 			{
-				return string.Format(CultureInfo.InvariantCulture, "ID: {0}, Offset: {1}, Value: {2}, Timestamp {3}", JoystickObj.Properties.JoystickId, Offset, Value, Timestamp);
+				return string.Format(CultureInfo.InvariantCulture, $"ID: {JoystickObj.Properties}, Offset: {Offset}, Value: {Value}, Normalised Value {NormalisedValue()}, Timestamp {Timestamp}");
 			}
 		}
 
