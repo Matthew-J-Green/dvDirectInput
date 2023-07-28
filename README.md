@@ -4,20 +4,21 @@ This mod adds input device support to Derail Valley
 
 # Features
 
-* Analogue axis support for all interior control types
+* Analogue axis and button support for all interior control types
 * Support for multiple game controllers at once
 * GUI configuration
+* Devices can be attached on the fly. Toggle the mod to disabled and back to enabled to pick up the new devices
 
 # Limitations
 
 * Some interior control types do not behave as expected. They may require discrete values rather than analogue inputs
-* Button support isn't officially setup, however they may work. It would be useful to allow buttons to only toggle on press to enable support for converting a momentary button to a latching one. This would additionally allow for rotary encoders to work
-* While the diesel locos have discrete throttle steps. Analogue inputs work fine but may be better with thresholds
+* While buttons do work, most locomotive controls are latching wheres typical input devices are momentary. It would be useful to allow buttons to only toggle on press to enable support for converting a momentary button to a latching one.
+* Locomotive controls with multiple states (such as lights, wipers etc) will work with analogue inputs but will not work with buttons as they require discrete values to toggle each state.
+* Analogue inputs on diesel electric locomotives work fine but can be finnicky due to their discrete input steps.
 * Diesel locos have a 3 state reverser. Neutral is exactly 50%, you won't get neutral unless you set up a deadzone on your input device
 * Xbox gamepads only work when the game is focused. Windows seems to be grabbing the inputs before they get to the game
-* Unplugging devices will crash the mod. It'll be fixed at some point.
 * There is no deadzone support. Configure this in you devices software for now
-* This mod assumes the device outputs its axis with values between 0 and 65535. It's unclear if all devices use this range. If you are having issues not being able to reach full/zero throttle - first check windows game controllers to see if that reports the full range, then check your device software utility to see if it's calibrated/configured correctly. If that doesn't fix it, open the log or view the command line to see what range of values are reported and raise an issue.
+* Scaling for split inputs (such as the Xbox triggers) is not implemented. As such these inputs will likely not be usable
 * This mod hasn't been tested that much. Prepare for things to break
 
 # Installation
@@ -32,15 +33,16 @@ Select Derail Valley from the game list, point to its installation directory (ty
 # Configuration
 
 The mod settings are stored within `Settings.xml` within the `DerailValley\Mods\dvDirectInput` directory.\
-It is not recommend to modify this file. Instead make changes via Unity Mod Managers configuration screen (default `CTRL + F10`).
+It is not recommend to modify this file. Instead make changes via Unity Mod Manager configuration screen (default `CTRL + F10`).
 
-Make sure your input devices are plugged in before launching Derail Valley. This mod currently does not dynamically load/unload devices so don't unplug devices mid game, it will crash the mod.
+Make sure your input devices are plugged in before launching Derail Valley. If attached after launching the game, please disable, then re-enable the mod via the Unity Mod Manager configuration screen
 
 On first launch a GUI is presented in the top left. It lists all the input devices with its name, a numerical ID and the mapping of the most recent inputs used. This can be disabled in the mods settings.\
 Leaving this enabled may cause a lot of lag as all inputs are reported to the console.
 
 Within the settings window you can map the input devices to the locomotive controls.\
 Note that the Device ID and Device Offset take a numerical value. This is to be updated in the future to restrict the values to only those available. Device Offset will be changed to display the axis/button name rather than its numerical equivalent\
+Editing these values can be tricky, try adding the value you desire before deleting the old one\
 Make sure the control is enabled for it to take effect.
 
 The next time you jump in a locomotive, try out your new control interface.
