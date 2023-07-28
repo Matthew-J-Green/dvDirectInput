@@ -68,7 +68,7 @@ namespace dvDirectInput
 			// Grab inputs for all controllers
 			foreach (var joystick in joysticks.Select((val, idx) => new { idx, val }))
 			{
-				joystick.val.Poll();
+				try { joystick.val.Poll(); } catch { continue; }
 				foreach (var data in joystick.val.GetBufferedData())
 				{
 					// Chuck all the inputs on a queue

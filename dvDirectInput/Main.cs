@@ -7,6 +7,7 @@ namespace dvDirectInput
 {
 	public static class Main
 	{
+		public static bool Enabled = false;
 		public static UnityModManager.ModEntry mod;
 		public static Settings settings = new();
 
@@ -34,12 +35,28 @@ namespace dvDirectInput
 				}
 			}
 
-			Input.Initialise();
-
+			mod.OnToggle = OnToggle;
 			mod.OnUpdate = OnUpdate;
 			mod.OnGUI = OnGUI;
 			mod.OnSaveGUI = OnSaveGUI;
 			mod.OnFixedGUI = OnFixedGUI;
+
+			return true;
+		}
+
+		static bool OnToggle(UnityModManager.ModEntry modEntry, bool value)
+		{
+			Enabled = value;
+			if (Enabled)
+			{
+				Input.Initialise();
+			}
+			else
+			{
+				Input.joysticks.Clear();
+				Input.inputQueue.Clear();
+				Input.joysticksRecentInputs.Clear();
+			}
 
 			return true;
 		}
